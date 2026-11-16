@@ -61,7 +61,7 @@ export default defineParams({
     magnetDepth: {
       type: 'slider',
       default: 2.2,
-      min: 1.5,
+      min: 1,
       max: 4,
       step: 0.1,
       label: 'Magnet depth (mm)',
