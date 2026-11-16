@@ -19,13 +19,13 @@ export default defineParams({
       ],
       label: 'Processing mode',
     },
-    maxHeight: {
+    maxwidth: {
       type: 'slider',
-      default: 75,
+      default: 30,
       min: 20,
       max: 150,
       step: 1,
-      label: 'Max Height (mm)',
+      label: 'Max Width (mm)',
     },
 
     // ---------- Overall part ----------
