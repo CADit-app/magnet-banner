@@ -1,6 +1,6 @@
 {
   "name": "@cadit-app/magnet-banner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,6 +25,10 @@
     "type": "git",
     "url": "https://github.com/CADit-app/magnet-banner"
   },
+  "homepage": "https://github.com/CADit-app/magnet-banner#readme",
+  "bugs": {
+    "url": "https://github.com/CADit-app/magnet-banner/issues"
+  },
   "dependencies": {
     "@cadit-app/image-extrude": "^0.5.0",
     "@cadit-app/script-params": "^0.5.4"
@@ -34,5 +38,8 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

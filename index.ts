@@ -53,8 +53,8 @@ export default defineParams({
     magnetDiameter: {
       type: 'slider',
       default: 10,
-      min: 6,
-      max: 15,
+      min: 2,
+      max: 10,
       step: 0.5,
       label: 'Magnet diameter (mm)',
     },
