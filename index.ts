@@ -19,20 +19,20 @@ export default defineParams({
       ],
       label: 'Processing mode',
     },
-    maxWidth: {
+    maxHeight: {
       type: 'slider',
-      default: 60,
+      default: 75,
       min: 20,
       max: 150,
       step: 1,
-      label: 'Max width (mm)',
+      label: 'Max Height (mm)',
     },
 
     // ---------- Overall part ----------
     thickness: {
       type: 'slider',
-      default: 3.5,
-      min: 2.5,
+      default: 2,
+      min: 1.5,
       max: 8,
       step: 0.1,
       label: 'Total thickness (mm)',
