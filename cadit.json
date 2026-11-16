@@ -1,0 +1,57 @@
+{
+  "entryPoint": "index.ts",
+  "name": "magnet banner",
+  "images": [
+    {
+      "path": "images/Screenshot 2026-11-15 191307.webp",
+      "isPrimary": true
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191417.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191430.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191442.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191452.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191506.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191516.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191531.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191549.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191559.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191609.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191619.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191627.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191635.webp"
+    },
+    {
+      "path": "images/Screenshot 2026-11-15 191417 - Copy.webp"
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-11-16T02:18:02.035Z",
+    "createdWith": "cadit-web",
+    "designId": "JGHDsnEpCPTGABl"
+  }
+}
