@@ -1,5 +1,5 @@
 import { defineParams } from '@cadit-app/script-params';
-import { Manifold } from 'manifold-3d/manifoldCAD';
+import { Manifold, CrossSection } from 'manifold-3d/manifoldCAD';
 import { makeCrossSection } from '@cadit-app/image-extrude';
 
 export default defineParams({
@@ -8,37 +8,45 @@ export default defineParams({
     image: {
       type: 'image',
       default: null,
-      label: 'Upload SVG / PNG / JPG',
+      label: 'Upload black & white sheet',
     },
     mode: {
       type: 'choice',
-      default: 'sample',
+      default: 'trace',
       options: [
-        { value: 'sample', label: 'Sample (best for SVG)' },
-        { value: 'trace', label: 'Trace (for PNG/JPG)' },
+        { value: 'trace', label: 'Trace (best for screenshots)' },
+        { value: 'sample', label: 'Sample (only for clean SVG)' },
       ],
       label: 'Processing mode',
     },
-    maxwidth: {
+    targetWidth: {
       type: 'slider',
-      default: 30,
+      default: 45,
       min: 20,
-      max: 150,
+      max: 80,
       step: 1,
-      label: 'Max Width (mm)',
+      label: 'Target width per character (mm)',
+    },
+    despeckle: {
+      type: 'slider',
+      default: 3,
+      min: 1,
+      max: 8,
+      step: 1,
+      label: 'Despeckle (higher = cleaner)',
     },
 
-    // ---------- Overall part ----------
+    // ---------- Part settings ----------
     thickness: {
       type: 'slider',
-      default: 2,
-      min: 1.5,
-      max: 8,
+      default: 3.5,
+      min: 2.5,
+      max: 6,
       step: 0.1,
-      label: 'Total thickness (mm)',
+      label: 'Thickness (mm)',
     },
 
-    // ---------- Magnet settings ----------
+    // ---------- Magnets ----------
     magnetCount: {
       type: 'choice',
       default: '1',
@@ -46,118 +54,143 @@ export default defineParams({
         { value: '1', label: '1 magnet (center)' },
         { value: '2h', label: '2 magnets (horizontal)' },
         { value: '2v', label: '2 magnets (vertical)' },
-        { value: '4', label: '4 magnets (corners)' },
       ],
-      label: 'Number of magnets',
+      label: 'Magnets per character',
     },
     magnetDiameter: {
       type: 'slider',
       default: 10,
-      min: 2,
-      max: 10,
+      min: 6,
+      max: 14,
       step: 0.5,
       label: 'Magnet diameter (mm)',
+    },
+    magnetScale: {
+      type: 'slider',
+      default: 1.3,
+      min: 0.9,
+      max: 2.0,
+      step: 0.1,
+      label: 'Magnet size multiplier',
     },
     magnetDepth: {
       type: 'slider',
       default: 2.2,
-      min: 1,
-      max: 4,
+      min: 1.5,
+      max: 3.5,
       step: 0.1,
       label: 'Magnet depth (mm)',
     },
     magnetClearance: {
       type: 'number',
       default: 0.25,
-      min: 0.1,
-      max: 0.5,
+      min: 0.15,
+      max: 0.4,
       step: 0.05,
       label: 'Clearance (mm)',
     },
     spacing: {
       type: 'slider',
-      default: 25,
-      min: 12,
-      max: 60,
+      default: 18,
+      min: 10,
+      max: 35,
       step: 1,
-      label: 'Spacing between magnets (mm)',
-    },
-    offsetX: {
-      type: 'number',
-      default: 0,
-      min: -40,
-      max: 40,
-      step: 0.5,
-      label: 'Overall X offset',
-    },
-    offsetY: {
-      type: 'number',
-      default: 0,
-      min: -40,
-      max: 40,
-      step: 0.5,
-      label: 'Overall Y offset',
+      label: 'Magnet spacing (mm)',
     },
   },
 
   main: async (params) => {
-    // Fallback shape if no image uploaded
     if (!params.image?.dataUrl) {
-      return Manifold.cube([40, 30, params.thickness], true);
+      return Manifold.cube([30, 20, params.thickness], true);
     }
 
-    // 1. Create the main shape from the image
-    const crossSection = await makeCrossSection({
+    // 1. Trace / sample the whole sheet
+    let full = await makeCrossSection({
       imageFile: {
         dataUrl: params.image.dataUrl,
         fileType: params.image.fileType,
-        fileName: params.image.fileName || 'shape.svg',
+        fileName: params.image.fileName || 'sheet.png',
       },
       mode: params.mode as 'sample' | 'trace',
-      maxWidth: params.maxWidth,
+      maxWidth: 200, // temporary large size
+      // @ts-ignore - despeckle is supported in trace
+      despeckleSize: params.despeckle,
     });
 
-    let body = crossSection.extrude(params.thickness);
+    // 2. Break the sheet into individual characters
+    const pieces = full.decompose();   // returns array of CrossSections
 
-    // 2. Calculate magnet positions based on layout
-    const positions: [number, number][] = [];
-    const half = params.spacing / 2;
-
-    switch (params.magnetCount) {
-      case '1':
-        positions.push([0, 0]);
-        break;
-      case '2h': // horizontal pair
-        positions.push([-half, 0], [half, 0]);
-        break;
-      case '2v': // vertical pair
-        positions.push([0, -half], [0, half]);
-        break;
-      case '4': // four corners
-        positions.push(
-          [-half, -half],
-          [ half, -half],
-          [-half,  half],
-          [ half,  half]
-        );
-        break;
+    if (pieces.length === 0) {
+      return Manifold.cube([20, 20, params.thickness], true);
     }
 
-    // 3. Create and cut each magnet pocket
-    const radius = (params.magnetDiameter + params.magnetClearance * 2) / 2;
-    const pocketHeight = params.magnetDepth + 0.4;
+    // 3. Process each character
+    const results: Manifold[] = [];
 
-    for (const [x, y] of positions) {
-      const pocket = Manifold.cylinder(pocketHeight, radius, radius, 64)
-        .translate([
-          x + params.offsetX,
-          y + params.offsetY,
-          -params.thickness / 2 + pocketHeight / 2 - 0.05,
-        ]);
+    for (const piece of pieces) {
+      // Skip tiny noise pieces
+      const b = piece.bounds();
+      const w = b.max[0] - b.min[0];
+      const h = b.max[1] - b.min[1];
+      if (w < 3 || h < 3) continue;
 
-      body = body.subtract(pocket);
+      // Scale this character to target width
+      const scale = params.targetWidth / w;
+      let cs = piece.scale([scale, scale]);
+
+      // Center it
+      const nb = cs.bounds();
+      const cx = (nb.min[0] + nb.max[0]) / 2;
+      const cy = (nb.min[1] + nb.max[1]) / 2;
+      cs = cs.translate([-cx, -cy]);
+
+      // Extrude
+      let body = cs.extrude(params.thickness);
+
+      // Add magnets
+      const positions: [number, number][] = [];
+      const half = params.spacing / 2;
+
+      switch (params.magnetCount) {
+        case '1':
+          positions.push([0, 0]);
+          break;
+        case '2h':
+          positions.push([-half, 0], [half, 0]);
+          break;
+        case '2v':
+          positions.push([0, -half], [0, half]);
+          break;
+      }
+
+      const effectiveDia = params.magnetDiameter * params.magnetScale;
+      const radius = (effectiveDia + params.magnetClearance * 2) / 2;
+      const pocketH = params.magnetDepth + 0.4;
+
+      for (const [x, y] of positions) {
+        const pocket = Manifold.cylinder(pocketH, radius, radius, 48)
+          .translate([
+            x,
+            y,
+            -params.thickness / 2 + pocketH / 2 - 0.05,
+          ]);
+        body = body.subtract(pocket);
+      }
+
+      results.push(body);
     }
 
-    return body;
+    // 4. Combine all characters into one model
+    // (they will be stacked at the origin – you can separate them later in the slicer or move them)
+    if (results.length === 0) {
+      return Manifold.cube([20, 20, params.thickness], true);
+    }
+
+    let combined = results[0];
+    for (let i = 1; i < results.length; i++) {
+      combined = combined.add(results[i]);
+    }
+
+    return combined;
   },
 });
